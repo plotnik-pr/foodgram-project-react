@@ -205,27 +205,38 @@ class FavoriteSerializer(serializers.ModelSerializer):
 
 class FollowSerializer(serializers.ModelSerializer):
     """Сериализатор для подписок."""
-    user = serializers.SlugRelatedField(
-        slug_field='username',
-        read_only=True,
-        default=User(),
-    )
-    following = serializers.SlugRelatedField(
-        slug_field='username',
-        read_only=False,
-        queryset=User.objects.all(),
-    )
+    id = serializers.IntegerField(
+        source='author.id')
+    email = serializers.EmailField(
+        source='author.email')
+    username = serializers.CharField(
+        source='author.username')
+    first_name = serializers.CharField(
+        source='author.first_name')
+    last_name = serializers.CharField(
+        source='author.last_name')
+    recipes = serializers.SerializerMethodField()
+    is_subscribed = serializers.SerializerMethodField(read_only=True)
+    recipes_count = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = Follow
-        fields = ["email",
-                  "id",
-                  "username",
-                  "first_name",
-                  "last_name",
-                  "is_subscribed",
-                  "recipes",
-                  "recipes_count", ]
+        fields = ('email', 'id', 'username', 'first_name',
+                  'last_name', 'is_subscribed', 'recipes', 'recipes_count')
+
+    def get_is_subscribed(self, obj):
+        request = self.context.get('request')
+        if request.user.is_anonymous:
+            return False
+        return Follow.objects.filter(
+            author=obj.author, user=request.user).exists()
+
+    def get_recipes(self, obj):
+        recipes = obj.author.recipes.all()
+        return FollowRecipeSerializer(recipes, many=True).data
+
+    def get_recipes_count(self, obj):
+        return obj.author.recipes.all().count()
 
 
 class FollowersSerializer(serializers.ModelSerializer):
@@ -246,6 +257,14 @@ class FollowersSerializer(serializers.ModelSerializer):
             'recipes',
             'recipes_count'
         ]
+
+
+class FollowRecipeSerializer(serializers.ModelSerializer):
+    """Связь подписчика и рецепта."""
+
+    class Meta:
+        model = Recipe
+        fields = ('id', 'name', 'image', 'cooking_time')
 
 
 class ShoppingCartSerializer(serializers.ModelSerializer):

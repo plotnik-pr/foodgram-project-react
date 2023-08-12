@@ -1,7 +1,7 @@
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
-from rest_framework import status
+from rest_framework import status, generics
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 
@@ -58,9 +58,11 @@ class FavoriteViewSet(ModelViewSet):
     serializer_class = FavoriteSerializer
 
 
-class FollowViewSet(ModelViewSet):
+class Follows(generics.RetrieveDestroyAPIView,
+              generics.ListCreateAPIView):
     """Вьюсет для подписки или отписки."""
     permission_classes = [IsAuthenticated, ]
+    serializer_class = FollowSerializer
 
     def create(self, request, *args, **kwargs):
         '''Создание подписки.'''
@@ -91,7 +93,6 @@ class FollowersViewSet(ModelViewSet):
             page, many=True, context=context
         )
         return self.get_paginated_response(serializer.data)
-    pass
 
 
 class ShoppingCartViewSet(ModelViewSet):
