@@ -34,29 +34,13 @@ class RecipeViewSet(ModelViewSet):
     filterset_class = RecipeFilter
     permission_classes = [IsAuthorPermissions, ]
 
-    def dispatch(self, request, *args, **kwargs):
-        res = super().dispatch(self, request, *args, **kwargs)
-        from django.db import connection
-        print(len(connection.queries))
-        for q in connection.queries:
-            print('>>>>', q['sql'])
-            return res
-
-    def get_queryset(self):
-        recipes = Recipe.objects.prefetch_related(
-            'recipe_ingredients__ingredient', 'tags'
-        ).all()
-        return recipes
-
     def get_serializer_class(self):
         if self.request.method == 'GET':
-            return RecipeCreateSerializer
-        return RecipeSerializer
+            return RecipeSerializer
+        return RecipeCreateSerializer
 
-    def get_serializer_context(self):
-        context = super().get_serializer_context()
-        context.update({'request': self.request})
-        return context
+    def perform_create(self, serializer):
+        serializer.save(author=self.request.user)
 
 
 class IngredientViewSet(ModelViewSet):
@@ -66,38 +50,24 @@ class IngredientViewSet(ModelViewSet):
     filterset_class = IngredientFilter
     permission_classes = [AllowAny, ]
 
-    def get_serializer_context(self):
-        context = super().get_serializer_context()
-        context.update({'request': self.request})
-        return context
-
 
 class FavoriteViewSet(ModelViewSet):
     """Вьюсет для добавление в избранное."""
     permission_classes = [IsAuthenticated, ]
     queryset = Favorite.objects.all()
     serializer_class = FavoriteSerializer
-    pass
 
 
 class FollowViewSet(ModelViewSet):
     """Вьюсет для подписки или отписки."""
     permission_classes = [IsAuthenticated, ]
 
-    def post(self, request, id):
-        data = {
-            'user': request.user.id,
-            'author': id
-        }
-        context = {'request': request}
-        serializer = FollowSerializer(
-            data=data,
-            context=context
-        )
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(status=status.HTTP_400_BAD_REQUEST)
+    def create(self, request, *args, **kwargs):
+        '''Создание подписки.'''
+        user_author = get_object_or_404(User, id=self.kwargs['user_id'])
+        subscribe = request.user.follower.create(author=user_author)
+        serializer = self.get_serializer(subscribe)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     def delete(self, request, author_id):
         user = request.user

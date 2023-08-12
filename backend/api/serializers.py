@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from djoser.serializers import UserSerializer
 from drf_extra_fields.fields import Base64ImageField
+from django.shortcuts import get_object_or_404
 
 from recipes.models import (Tag, Recipe, RecipeIngredient, Ingredient,
                             Favorite, ShoppingCart)
@@ -53,10 +54,8 @@ class RecipeSerializer(serializers.ModelSerializer):
     """Сериализатор для рецептов."""
     tags = TagSerializer(many=True)
     author = UserSerializer(read_only=True)
-    ingredients = RecipeIngredientSerializer(many=True,
-                                             source='recipe_ingredients')
-    is_favorited = serializers.SerializerMethodField(
-        method_name='get_is_favorited')
+    ingredients = RecipeIngredientSerializer(many=True,)
+    is_favorited = serializers.SerializerMethodField()
     is_in_shopping_cart = serializers.SerializerMethodField(
         method_name='get_is_in_shopping_cart')
 
@@ -75,16 +74,32 @@ class RecipeSerializer(serializers.ModelSerializer):
             'cooking_time'
         ]
 
+    def get_is_favorited(self, obj):
+        request = self.context.get('request')
+        if request.user.is_anonymous:
+            return False
+        return Favorite.objects.filter(
+            recipe=obj, user=request.user).exists()
+
+    def get_is_in_shopping_cart(self, obj):
+        request = self.context.get('request')
+        if request.user.is_anonymous:
+            return False
+        return ShoppingCart.objects.filter(
+            recipe=obj, user=request.user
+        ).exists()
+
 
 class RecipeIngredientCreateSerializer(serializers.ModelSerializer):
-    id = serializers.PrimaryKeyRelatedField(
-        source='ingredient',
-        queryset=Ingredient.objects.all()
-    )
+    id = serializers.IntegerField(source='ingredient.id')
+    amount = serializers.IntegerField()
+    name = serializers.CharField(source='ingredient.name', read_only=True)
+    measurement_unit = serializers.CharField(
+        source='ingredient.measurement_unit', read_only=True)
 
     class Meta:
         model = RecipeIngredient
-        fields = ('id', 'amount')
+        fields = ['id', 'name', 'measurement_unit', 'amount']
 
 
 class RecipeCreateSerializer(serializers.ModelSerializer):
@@ -113,18 +128,28 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
             'cooking_time'
         ]
 
-    def save(self, **kwargs):
-        return super().save(**kwargs)
-
     def create(self, validated_data):
         ingredients = validated_data.pop('ingredients')
         instance = super().create(validated_data)
-
         for ingredient_data in ingredients:
+            ingredient = ingredient_data['ingredient']
             RecipeIngredient(
                 recipe=instance,
-                ingredient=ingredient_data['ingredient'],
+                ingredient=get_object_or_404(Ingredient, id=ingredient['id']),
                 amount=ingredient_data['amount']
+            ).save()
+        return instance
+
+    def update(self, instance, validated_data):
+        ingredients = validated_data.pop('ingredients')
+        RecipeIngredient.objects.filter(recipe=instance).delete()
+        super().update(instance, validated_data)
+        for data in ingredients:
+            ingredient = data['ingredient']
+            RecipeIngredient(
+                recipe=instance,
+                ingredient=get_object_or_404(Ingredient, id=ingredient['id']),
+                amount=data['amount']
             ).save()
         return instance
 

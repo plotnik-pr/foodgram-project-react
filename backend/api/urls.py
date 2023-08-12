@@ -7,17 +7,21 @@ from .views import (TagViewSet, RecipeViewSet, IngredientViewSet,
 
 app_name = 'api'
 
-router = DefaultRouter()
-router.register(r'tags', TagViewSet, basename='tags')
-router.register(r'recipes', RecipeViewSet, basename='recipes')
-router.register(r'ingredients', IngredientViewSet, basename='ingredients')
-router.register(r'favorite', FavoriteViewSet, basename='favorite')
-router.register(r'subscribe', FollowViewSet, basename='follow')
-router.register(r'subscriptions', FollowersViewSet, basename='followers')
-router.register(r'recipes', ShoppingCartViewSet, basename='shopping_cart')
+router_v1 = DefaultRouter()
+router_v1.register('tags', TagViewSet, basename='tags')
+router_v1.register('recipes', RecipeViewSet, basename='recipes')
+router_v1.register('ingredients', IngredientViewSet, basename='ingredients')
+router_v1.register('users/<int:id>/favorite/', FavoriteViewSet,
+                   basename='favorite')
+router_v1.register('users/<int:id>/subscribe/', FollowViewSet,
+                   basename='follow')
+router_v1.register('users/<int:id>/subscriptions/', FollowersViewSet,
+                   basename='followers')
+router_v1.register('users/<int:id>/shopping_cart/', ShoppingCartViewSet,
+                   basename='shopping_cart')
 
 urlpatterns = [
     path('auth/', include('djoser.urls.authtoken')),
     path('', include('djoser.urls')),
-    path('', include(router.urls)),
+    path('', include(router_v1.urls)),
 ]
