@@ -42,12 +42,12 @@ class RecipeIngredientSerializer(serializers.ModelSerializer):
     id = serializers.IntegerField(source='ingredient.id')
     name = serializers.CharField(source='ingredient.name')
     messurement_unit = serializers.CharField(
-        source="ingredient.messurement_unit")
-    amount = serializers.IntegerField()
+        source="ingredient.messurement_unit", read_only=True)
+    amount = serializers.IntegerField(read_only=True)
 
     class Meta:
         model = RecipeIngredient
-        fields = ['id', 'name', 'messurement_unit' 'amount']
+        fields = ['id', 'name', 'messurement_unit', 'amount']
 
 
 class RecipeSerializer(serializers.ModelSerializer):
@@ -56,8 +56,7 @@ class RecipeSerializer(serializers.ModelSerializer):
     author = UserSerializer(read_only=True)
     ingredients = RecipeIngredientSerializer(many=True,)
     is_favorited = serializers.SerializerMethodField()
-    is_in_shopping_cart = serializers.SerializerMethodField(
-        method_name='get_is_in_shopping_cart')
+    is_in_shopping_cart = serializers.SerializerMethodField()
 
     class Meta:
         model = Recipe
@@ -237,26 +236,6 @@ class FollowSerializer(serializers.ModelSerializer):
 
     def get_recipes_count(self, obj):
         return obj.author.recipes.all().count()
-
-
-class FollowersSerializer(serializers.ModelSerializer):
-    """Сериализатор для подписчиков."""
-    is_subscribed = serializers.SerializerMethodField()
-    recipes = serializers.SerializerMethodField()
-    recipes_count = serializers.SerializerMethodField()
-
-    class Meta:
-        model = User
-        fields = [
-            'id',
-            'email',
-            'username',
-            'first_name',
-            'last_name',
-            'is_subscribed',
-            'recipes',
-            'recipes_count'
-        ]
 
 
 class FollowRecipeSerializer(serializers.ModelSerializer):
