@@ -9,8 +9,7 @@ class RecipeFilter(FilterSet):
     tags = filters.ModelMultipleChoiceFilter(
         field_name='tags__slug',
         queryset=Tag.objects.all(),
-        to_field_name='slug'
-    )
+        to_field_name='slug')
     is_favorited = filters.BooleanFilter(
         method='get_favorite')
     is_in_shopping_cart = filters.BooleanFilter(
@@ -32,6 +31,7 @@ class RecipeFilter(FilterSet):
 
 
 class IngredientFilter(FilterSet):
+    """Фильтр для ингредиентов."""
     name = CharFilter(lookup_expr='startswith')
 
     class Meta:

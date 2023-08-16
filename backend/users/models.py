@@ -4,6 +4,7 @@ from rest_framework.exceptions import ValidationError
 
 
 class User(AbstractUser):
+    """Модель пользователя."""
     email = models.EmailField(
         verbose_name='Электронная почта',
         unique=True,
@@ -30,6 +31,7 @@ class User(AbstractUser):
 
 
 class Follow(models.Model):
+    """Модель подписок."""
     user = models.ForeignKey(
         User,
         related_name='follower',
