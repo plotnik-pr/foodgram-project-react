@@ -41,13 +41,13 @@ class RecipeIngredientSerializer(serializers.ModelSerializer):
     """Сериализатор для связи рецепт-ингредиент."""
     id = serializers.IntegerField(source='ingredient.id')
     name = serializers.CharField(source='ingredient.name')
-    messurement_unit = serializers.CharField(
-        source="ingredient.messurement_unit", read_only=True)
+    measurement_unit = serializers.CharField(
+        source="ingredient.measurement_unit", read_only=True)
     amount = serializers.IntegerField(read_only=True)
 
     class Meta:
         model = RecipeIngredient
-        fields = ['id', 'name', 'messurement_unit', 'amount']
+        fields = ['id', 'name', 'measurement_unit', 'amount']
 
 
 class RecipeSerializer(serializers.ModelSerializer):
@@ -248,10 +248,9 @@ class FollowRecipeSerializer(serializers.ModelSerializer):
 
 class ShoppingCartSerializer(serializers.ModelSerializer):
     """Сериализатор для корзины."""
-    id = serializers.CharField(source='recipe.id')
-    name = serializers.CharField(source='recipe.name')
-    image = serializers.CharField(source='recipe.image')
-    cooking_time = serializers.CharField(source='recipe.cooking_time')
+    name = serializers.CharField()
+    image = serializers.ImageField()
+    cooking_time = serializers.IntegerField()
 
     class Meta:
         model = ShoppingCart

@@ -6,6 +6,8 @@ from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.decorators import action
 from rest_framework.pagination import PageNumberPagination
+from django.http import HttpResponse
+from django.db.models import Sum
 
 from .permissions import IsAuthorPermissions
 from recipes.models import (Tag, Recipe, Ingredient, )
@@ -13,7 +15,7 @@ from users.models import Follow, User
 from .serializers import (TagSerializer, RecipeSerializer,
                           RecipeCreateSerializer, IngredientSerializer,
                           FavoriteSerializer, FollowSerializer,
-                          ShoppingCartSerializer,
+                          ShoppingCartSerializer, RecipeIngredient
                           )
 from .filters import RecipeFilter, IngredientFilter
 
@@ -42,6 +44,25 @@ class RecipeViewSet(ModelViewSet):
     def perform_create(self, serializer):
         serializer.save(author=self.request.user)
 
+    @action(detail=False)
+    def download_shopping_cart(self, request):
+        ingredients = (RecipeIngredient.objects.filter(
+            recipe__shopping_cart__user=request.user).values(
+            'ingredient__name',
+            'ingredient__measurement_unit',).annotate(
+            amount=Sum('amount')).order_by()
+        )
+        print(ingredients)
+        data = []
+        for ingredient in ingredients:
+            name = ingredient['ingredient__name']
+            measurement_unit = ingredient['ingredient__measurement_unit']
+            amount = ingredient['amount']
+            data.append(f'{name}: {amount}, {measurement_unit}\n')
+        response = HttpResponse(content=data, content_type='text/plain')
+        response['Content-Disposition'] = 'attachment; filename="cart.txt"'
+        return response
+
 
 class IngredientViewSet(ModelViewSet):
     """Вьюсет для ингредиентов."""
@@ -49,6 +70,7 @@ class IngredientViewSet(ModelViewSet):
     serializer_class = IngredientSerializer
     filterset_class = IngredientFilter
     permission_classes = [AllowAny, ]
+    pagination_class = None
 
 
 class Favorite(generics.RetrieveDestroyAPIView,
