@@ -7,13 +7,13 @@ from .views import (TagViewSet, RecipeViewSet, IngredientViewSet,
 
 app_name = 'api'
 
-router_v1 = DefaultRouter()
-router_v1.register('tags', TagViewSet, basename='tags')
-router_v1.register('recipes', RecipeViewSet, basename='recipes')
-router_v1.register('ingredients', IngredientViewSet, basename='ingredients')
+router = DefaultRouter()
+router.register('tags', TagViewSet, basename='tags')
+router.register('recipes', RecipeViewSet, basename='recipes')
+router.register('ingredients', IngredientViewSet, basename='ingredients')
 
 urlpatterns = [
-    path('', include(router_v1.urls)),
+    path('', include(router.urls)),
     path(
         'users/subscriptions/',
         FollowersViewSet.as_view(),

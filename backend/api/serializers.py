@@ -9,6 +9,32 @@ from recipes.models import (Tag, Recipe, RecipeIngredient, Ingredient,
 from users.models import User, Follow
 
 
+def create_ingredients_in_recipe(ingredients, instance):
+    RecipeIngredient.objects.bulk_create(
+        [RecipeIngredient(
+            ingredient=get_object_or_404(Ingredient, id=ingredient['id']),
+            recipe=instance,
+            amount=ingredients['amount']
+        ) for ingredient in ingredients]
+    )
+
+
+class SerializerWithMethods(serializers.ModelSerializer):
+    def get_is_favorited(self, obj):
+        request = self.context.get('request')
+        if request.user.is_anonymous:
+            return False
+        return Favorite.objects.filter(
+            recipe__favorites__user=request.user).exists()
+
+    def get_is_in_shopping_cart(self, obj):
+        request = self.context.get('request')
+        if request.user.is_anonymous:
+            return False
+        return ShoppingCart.objects.filter(
+            recipe__shopping_cart__user=request.user).exists()
+
+
 class UserCreateSerializer(UserSerializer):
     """Сериализатор создания пользователя."""
     class Meta:
@@ -34,7 +60,7 @@ class IngredientSerializer(serializers.ModelSerializer):
     class Meta:
         model = Ingredient
         fields = "__all__"
-        read_only_fields = ("__all__",)
+        read_only_fields = ('id', 'name', 'color', 'slug')
 
 
 class RecipeIngredientSerializer(serializers.ModelSerializer):
@@ -50,7 +76,7 @@ class RecipeIngredientSerializer(serializers.ModelSerializer):
         fields = ['id', 'name', 'measurement_unit', 'amount']
 
 
-class RecipeSerializer(serializers.ModelSerializer):
+class RecipeSerializer(SerializerWithMethods):
     """Сериализатор для рецептов."""
     tags = TagSerializer(many=True)
     author = UserSerializer(read_only=True)
@@ -73,21 +99,6 @@ class RecipeSerializer(serializers.ModelSerializer):
             'cooking_time'
         ]
 
-    def get_is_favorited(self, obj):
-        request = self.context.get('request')
-        if request.user.is_anonymous:
-            return False
-        return Favorite.objects.filter(
-            recipe=obj, user=request.user).exists()
-
-    def get_is_in_shopping_cart(self, obj):
-        request = self.context.get('request')
-        if request.user.is_anonymous:
-            return False
-        return ShoppingCart.objects.filter(
-            recipe=obj, user=request.user
-        ).exists()
-
 
 class RecipeIngredientCreateSerializer(serializers.ModelSerializer):
     """Сериализатор для связи рецептов и ингредиентов."""
@@ -102,7 +113,7 @@ class RecipeIngredientCreateSerializer(serializers.ModelSerializer):
         fields = ['id', 'name', 'measurement_unit', 'amount']
 
 
-class RecipeCreateSerializer(serializers.ModelSerializer):
+class RecipeCreateSerializer(SerializerWithMethods):
     """Сериализатор для добавления рецептов."""
     author = UserSerializer(read_only=True)
     ingredients = RecipeIngredientCreateSerializer(many=True)
@@ -131,42 +142,15 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         ingredients = validated_data.pop('ingredients')
         instance = super().create(validated_data)
-        for ingredient_data in ingredients:
-            ingredient = ingredient_data['ingredient']
-            RecipeIngredient(
-                recipe=instance,
-                ingredient=get_object_or_404(Ingredient, id=ingredient['id']),
-                amount=ingredient_data['amount']
-            ).save()
+        create_ingredients_in_recipe(ingredients, instance)
         return instance
 
     def update(self, instance, validated_data):
         ingredients = validated_data.pop('ingredients')
         RecipeIngredient.objects.filter(recipe=instance).delete()
         super().update(instance, validated_data)
-        for data in ingredients:
-            ingredient = data['ingredient']
-            RecipeIngredient(
-                recipe=instance,
-                ingredient=get_object_or_404(Ingredient, id=ingredient['id']),
-                amount=data['amount']
-            ).save()
+        create_ingredients_in_recipe(ingredients, instance)
         return instance
-
-    def get_is_favorited(self, obj):
-        request = self.context.get('request')
-        if request.user.is_anonymous:
-            return False
-        return Favorite.objects.filter(
-            recipe=obj, user=request.user).exists()
-
-    def get_is_in_shopping_cart(self, obj):
-        request = self.context.get('request')
-        if request.user.is_anonymous:
-            return False
-        return ShoppingCart.objects.filter(
-            recipe=obj, user=request.user
-        ).exists()
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -187,8 +171,8 @@ class UserSerializer(serializers.ModelSerializer):
         request = self.context.get('request')
         if request.user.is_anonymous:
             return False
-
-        return Follow.objects.filter(author=obj, user=request.user).exists()
+        return Follow.objects.filter(
+            author=obj, user=request.user).exists()
 
 
 class FavoriteSerializer(serializers.ModelSerializer):
@@ -229,7 +213,7 @@ class FollowSerializer(serializers.ModelSerializer):
         if request.user.is_anonymous:
             return False
         return Follow.objects.filter(
-            author=obj.author, user=request.user).exists()
+            author__following__user=request.user).exists()
 
     def get_recipes(self, obj):
         recipes = obj.author.recipes.all()
