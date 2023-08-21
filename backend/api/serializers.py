@@ -12,9 +12,10 @@ from users.models import User, Follow
 def create_ingredients_in_recipe(ingredients, instance):
     RecipeIngredient.objects.bulk_create(
         [RecipeIngredient(
-            ingredient=get_object_or_404(Ingredient, id=ingredient['id']),
+            ingredient=get_object_or_404(Ingredient,
+                                         id=ingredient['ingredient']['id']),
             recipe=instance,
-            amount=ingredients['amount']
+            amount=ingredient['amount']
         ) for ingredient in ingredients]
     )
 
