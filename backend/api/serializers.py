@@ -21,19 +21,18 @@ def create_ingredients_in_recipe(ingredients, instance):
 
 
 class SerializerWithMethods(serializers.ModelSerializer):
+    """Базовый сериализатор для рецепта, добавляющий новые методы."""
     def get_is_favorited(self, obj):
         request = self.context.get('request')
         if request.user.is_anonymous:
             return False
-        return Favorite.objects.filter(
-            recipe__favorites__user=request.user).exists()
+        return request.user.favorites.filter(recipe=obj).exists()
 
     def get_is_in_shopping_cart(self, obj):
         request = self.context.get('request')
         if request.user.is_anonymous:
             return False
-        return ShoppingCart.objects.filter(
-            recipe__shopping_cart__user=request.user).exists()
+        return request.user.shopping_cart.filter(recipe=obj).exists()
 
 
 class UserCreateSerializer(UserSerializer):
@@ -172,8 +171,7 @@ class UserSerializer(serializers.ModelSerializer):
         request = self.context.get('request')
         if request.user.is_anonymous:
             return False
-        return Follow.objects.filter(
-            author=obj, user=request.user).exists()
+        return request.user.follower.filter(author=obj).exists()
 
 
 class FavoriteSerializer(serializers.ModelSerializer):
