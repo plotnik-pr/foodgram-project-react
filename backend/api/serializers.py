@@ -20,21 +20,6 @@ def create_ingredients_in_recipe(ingredients, instance):
     )
 
 
-class SerializerWithMethods(serializers.ModelSerializer):
-    """Базовый сериализатор для рецепта, добавляющий новые методы."""
-    def get_is_favorited(self, obj):
-        request = self.context.get('request')
-        if request.user.is_anonymous:
-            return False
-        return request.user.favorites.filter(recipe=obj).exists()
-
-    def get_is_in_shopping_cart(self, obj):
-        request = self.context.get('request')
-        if request.user.is_anonymous:
-            return False
-        return request.user.shopping_cart.filter(recipe=obj).exists()
-
-
 class UserCreateSerializer(UserSerializer):
     """Сериализатор создания пользователя."""
     class Meta:
@@ -76,7 +61,7 @@ class RecipeIngredientSerializer(serializers.ModelSerializer):
         fields = ['id', 'name', 'measurement_unit', 'amount']
 
 
-class RecipeSerializer(SerializerWithMethods):
+class RecipeSerializer(serializers.ModelSerializer):
     """Сериализатор для рецептов."""
     tags = TagSerializer(many=True)
     author = UserSerializer(read_only=True)
@@ -99,6 +84,18 @@ class RecipeSerializer(SerializerWithMethods):
             'cooking_time'
         ]
 
+    def get_is_favorited(self, obj):
+        request = self.context.get('request')
+        if request.user.is_anonymous:
+            return False
+        return request.user.favorites.filter(recipe=obj).exists()
+
+    def get_is_in_shopping_cart(self, obj):
+        request = self.context.get('request')
+        if request.user.is_anonymous:
+            return False
+        return request.user.shopping_cart.filter(recipe=obj).exists()
+
 
 class RecipeIngredientCreateSerializer(serializers.ModelSerializer):
     """Сериализатор для связи рецептов и ингредиентов."""
@@ -113,7 +110,7 @@ class RecipeIngredientCreateSerializer(serializers.ModelSerializer):
         fields = ['id', 'name', 'measurement_unit', 'amount']
 
 
-class RecipeCreateSerializer(SerializerWithMethods):
+class RecipeCreateSerializer(RecipeSerializer):
     """Сериализатор для добавления рецептов."""
     author = UserSerializer(read_only=True)
     ingredients = RecipeIngredientCreateSerializer(many=True)
