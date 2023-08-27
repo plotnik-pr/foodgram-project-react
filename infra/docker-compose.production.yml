@@ -13,7 +13,7 @@ services:
       - pg_data_production:/var/lib/postgresql/data
 
   backend:
-    image: sined2904/foodgram_backend
+    image: tarronmorran/foodgram_backend
     env_file: .env
     volumes:
       - static_volume:/backend_static
@@ -22,7 +22,7 @@ services:
       - db
   
   frontend:
-    image: sined2904/foodgram_frontend
+    image: tarronmorran/foodgram_frontend
     env_file: .env
     command: cp -r /app/build/. /frontend_static/
     volumes:
@@ -31,7 +31,7 @@ services:
       - backend
   
   gateway:
-    image: sined2904/foodgram_gateway
+    image: tarronmorran/foodgram_gateway
     env_file: .env
     volumes:
       - static_volume:/staticfiles/
