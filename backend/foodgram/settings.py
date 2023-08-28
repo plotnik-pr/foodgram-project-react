@@ -168,7 +168,7 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-CSRF_TRUSTED_ORIGINS = ['http://*', 'https://*']
+CSRF_TRUSTED_ORIGINS = ['https://foodgram-practicum.freedynamicdns.org']
 
 PASSWORD_RESET_TIMEOUT = 60 * 60
 # Static files (CSS, JavaScript, Images)
