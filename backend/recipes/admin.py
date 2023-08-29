@@ -52,6 +52,7 @@ class RecipeAdmin(admin.ModelAdmin):
     )
     inlines = (RecipeIngredientInline, )
 
+    @admin.display(description='Количество избранных.')
     def count_favorites(self, obj):
         return obj.favorites.count()
 
