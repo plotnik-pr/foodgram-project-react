@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from djoser.serializers import UserSerializer
+from djoser.serializers import UserSerializer, ValidationError
 from drf_extra_fields.fields import Base64ImageField
 from django.shortcuts import get_object_or_404
 from recipes.models import (Favorite, Ingredient, Recipe, RecipeIngredient,
@@ -147,18 +147,24 @@ class RecipeCreateSerializer(RecipeSerializer):
         create_ingredients_in_recipe(ingredients, instance)
         return instance
 
-    def validate_cooking_time(self, cooking_time):
-        if cooking_time < 1:
-            raise serializers.ValidationError(
-                'Время готовки не может быть меньше 1 минуты')
-        return cooking_time
-
     def validate(self, attrs):
-        ingredients = attrs['ingredients']
-        for ingredient in ingredients:
-            if int(ingredient.get('amount')) < 1:
-                raise serializers.ValidationError(
-                    'Количество ингредиента не может быть 0!')
+        COOKING_TIME_MIN_ERROR = (
+            'Время приготовления не может быть меньше одной минуты!')
+        INGREDIENT_MIN_AMOUNT_ERROR = (
+            'Количество ингредиентов не может быть меньше {min_value}!')
+        INGREDIENT_MIN_AMOUNT = 1
+        COOKING_TIME_MIN_VALUE = 1
+        if attrs['cooking_time'] < COOKING_TIME_MIN_VALUE:
+            raise ValidationError(COOKING_TIME_MIN_ERROR)
+        id_ingredients = []
+        for ingredient in attrs['ingredients']:
+            if ingredient['amount'] < INGREDIENT_MIN_AMOUNT:
+                raise ValidationError(
+                    INGREDIENT_MIN_AMOUNT_ERROR.format(
+                        min_value=INGREDIENT_MIN_AMOUNT,
+                    )
+                )
+            id_ingredients.append(ingredient['id'])
         return attrs
 
 
