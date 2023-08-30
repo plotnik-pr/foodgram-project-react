@@ -41,7 +41,12 @@ class RecipeViewSet(ModelViewSet):
         return RecipeCreateSerializer
 
     def perform_create(self, serializer):
-        serializer.save(author=self.request.user)
+        if RecipeCreateSerializer.is_valid(raise_exception=True):
+            RecipeCreateSerializer.save(author=self.request.user)
+            return Response(RecipeCreateSerializer.data,
+                            status=status.HTTP_200_OK)
+        return Response(RecipeCreateSerializer.errors,
+                        status=status.HTTP_400_BAD_REQUEST)
 
     @action(detail=False)
     def download_shopping_cart(self, request):
