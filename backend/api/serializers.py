@@ -164,7 +164,7 @@ class RecipeCreateSerializer(RecipeSerializer):
         ingredients = attrs['ingredients']
         for ingredient in ingredients:
             if int(ingredient.get('amount')) < 1:
-                return serializers.ValidationError(
+                raise serializers.ValidationError(
                     'Количество ингредиента не может быть 0!')
         return attrs
 
