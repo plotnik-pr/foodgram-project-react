@@ -153,12 +153,20 @@ class RecipeCreateSerializer(RecipeSerializer):
                 'Время готовки не может быть меньше 1 минуты')
         return cooking_time
 
-    def validate_ingredients(self, ingredients):
+    # def validate_ingredients(self, ingredients):
+        # for ingredient in ingredients:
+        # if int(ingredient.get('amount')) < 1:
+        # raise serializers.ValidationError(
+        # 'Количество ингредиента не может быть 0!')
+        # return ingredients
+
+    def validate(self, attrs):
+        ingredients = attrs['ingredients']
         for ingredient in ingredients:
             if int(ingredient.get('amount')) < 1:
-                raise serializers.ValidationError(
+                return serializers.ValidationError(
                     'Количество ингредиента не может быть 0!')
-        return ingredients
+        return attrs
 
 
 class UserSerializer(serializers.ModelSerializer):
